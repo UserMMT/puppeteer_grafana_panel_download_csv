@@ -10,9 +10,12 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "puppeteer": "^10.2.0"
+    "puppeteer": "^19.8.5"
   },
   "dependencies": {
-    "dotenv": "^10.0.0"
+    "console": "^0.7.2",
+    "dotenv": "^10.0.0",
+    "http": "^0.0.1-security",
+    "yargs": "^17.6.2"
   }
 }

@@ -1,11 +1,7 @@
-const yargs = require('yargs');
-// const http = require('http');
 require('dotenv').config();
 const puppeteer = require('puppeteer');
 const path = require("path");
-const { exit } = require('process');
-const { time } = require('console');
-const http = require('http');
+
 (async () => {
     // on lance le launcher
     const browser = await puppeteer.launch(
@@ -17,17 +13,9 @@ const http = require('http');
 
     // connexion
     const newPage = await browser.newPage();
-    newPage.setDefaultNavigationTimeout(0); 
+    // newPage.setDefaultNavigationTimeout(0); 
+    // await newPage.goto(process.env.URL);
 
-    if (process.env.LOGIN && process.env.PASSWORD) {
-        // console.log('im in')
-        const authHeader = 'Basic ' + new Buffer.from(`${process.env.LOGIN}:${process.env.PASSWORD}`).toString('base64');
-        await newPage.setExtraHTTPHeaders({ 'Authorization': authHeader });
-      }
-    //   console.log('im out')
-
-    await newPage.goto(process.env.URL);
-   
     // await newPage.type('input[name="user"]', process.env.LOGIN);
     // await newPage.type('input[name="password"]', process.env.PASSWORD);
     // await newPage.click('button[aria-label="Login button"]', {
@@ -37,18 +25,7 @@ const http = require('http');
 
     await newPage.goto(process.env.URL);
 
-    // const downloadPath = path.resolve('./csv/');
-    // console.log(process.env)
-    //   exit()
-    let downloadPath;
-    if (process.env.DOWNLOAD_PATH) {
-        downloadPath = path.resolve(process.env.DOWNLOAD_PATH);
-    }else
-    {
-        downloadPath = path.resolve('./csv/');
-    }
-    // console.log(downloadPath)
-
+    const downloadPath = path.resolve('./csv/');
     await newPage._client().send('Page.setDownloadBehavior', {
         behavior: 'allow',
         userDataDir: './',
@@ -62,7 +39,7 @@ const http = require('http');
     await newPage.setViewport({width: 1280, height: 800});
 
     // on récupère tous nos blocs
-    await newPage.waitForSelector('.panel-container');
+    await newPage.waitForSelector('.panel-container',{waitUntil: 'load', timeout: 0} );
     const labels = await newPage.$$(".panel-container");
 
     // on récupère la liste de toutes les cards & on prend en particulier leurs titre [ contenus dans les "aria-label ]
@@ -110,53 +87,3 @@ const http = require('http');
     // puis on ferme le navigateur
     await browser.close();
 })();
-
-function startServer(options) {
-    const {
-      port,
-      host,
-      backendUrl,
-      backendUser,
-      backendPass,
-      timeoutDuration,
-      backendNoLogin,
-      executablePath
-    } = options;
-  
-    return http.createServer(async (request, response) => {
-      const kioskParam = request.url.indexOf('?') ? '&kiosk' : '?kiosk';
-      const url = `${backendUrl}${request.url}${kioskParam}`;
-      console.log(`Trying: ${url}`);
-  
-      try {
-        const pdf = await streamPdf(url, { backendUser, backendPass, executablePath ,backendNoLogin,timeoutDuration});
-        response.setHeader('Content-Type', 'text/csv');
-        pdf.pipe(response);
-      }
-      catch (e) {
-        console.error(e);
-        response.setHeader('Content-Type', 'text/html');
-        response.statusCode = 500;
-        response.end('<h1>Internal Server Error 500</h>');
-      }
-    }).listen(port, host);
-  }
-  // console.log(process.env)
-  const server = startServer({
-    port: process.env.GRAFANA_PDF_BIND_PORT || '6666',
-    host: process.env.GRAFANA_PDF_BIND_HOST || '::',
-    backendUrl: process.env.GRAFANA_PDF_BACKEND_URL ,
-    backendUser: process.env.GRAFANA_PDF_BACKEND_USER || 'admin',
-    backendPass: process.env.GRAFANA_PDF_BACKEND_PASS || 'admin',
-    executablePath: process.env.GRAFANA_PDF_CHROME_PATH ,
-    timeoutDuration: process.env.GRAFANA_PDF_TIMEOUT_DURATION || '12',
-    backendNoLogin: process.env.GRAFANA_PDF_BACKEND_NO_LOGIN || '0'
-  });
-  
-  server.on('listening', () => {
-    const { family, address, port } = server.address();
-    const url = family == 'IPv6' ? `http://[${address}]:${port}`
-                                 : `http://${address}:${port}`;
-    console.log(`Server running at ${url}`);
-  });
-  

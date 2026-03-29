@@ -87,7 +87,12 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 
+.vscode
+.history
 .idea
+index-linux
+index-macos
+index-win.exe
 package-lock.json
 
 /csv/*.csv
